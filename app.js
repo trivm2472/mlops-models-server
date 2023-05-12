@@ -1,4 +1,5 @@
 var express = require("express");
+const bodyParser = require('body-parser');
 const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
@@ -15,6 +16,7 @@ db.once("open", function () {
 
 var app = express();
 const model = mongoose.model("weight", ProductSchema, "weight");
+const modelMonitor = mongoose.model("monitoring", ProductSchema, "monitoring");
 
 app.use(function (req, res, next) {
 
@@ -28,6 +30,8 @@ app.use(function (req, res, next) {
 
   next();
 });
+
+app.use(bodyParser.json());
 
 app.get("/", async function (req, res) {
   const models = await model
@@ -46,13 +50,6 @@ app.get("/", async function (req, res) {
       modelNameArray.push(models[i].modelName);
     }
   }
-  // var result = modelNameArray.map(async (element) => {
-  //   const versions = await model
-  //   .find({modelName: element})
-  //   .exec();
-  //   console.log(versions);
-  //   return versions;
-  // });
 
   for (let i = 0; i < modelNameArray.length; i++) {
     const versions = await model
@@ -72,6 +69,29 @@ app.get('/model/:id', async function (req, res) {
   res.json(modelDetail);
 });
 
+app.get('/deployed', async function (req, res) {
+  const deployed = await model
+  .find({deployed: true}, {modelName: 1, version: 1, id: 1, _id: -1})
+  .exec();
+  res.json(deployed);
+});
+
+app.post('/deploy', async function (req, res) {
+  const data = req.body;
+  await model.updateMany({}, {deployed: false}).exec();
+  for(let i = 0; i < data.modelIdList.length; i++){
+    await model.updateMany({id: data.modelIdList[i]}, {deployed: true}).exec();
+  }
+  res.json('success');
+})
+
+app.get('/monitor/:name', async function (req, res) {
+  var modelName = req.params.name;
+  const deployed = await modelMonitor
+  .find({modelName: modelName}, {})
+  .exec();
+  res.json(deployed);
+})
 
 app.listen(4000, function () {
   console.log("Example app listening on port 4000!");
