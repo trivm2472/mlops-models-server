@@ -17,6 +17,7 @@ db.once("open", function () {
 var app = express();
 const model = mongoose.model("weight", ProductSchema, "weight");
 const modelMonitor = mongoose.model("monitoring", ProductSchema, "monitoring");
+const modelImage = mongoose.model("image", ProductSchema, "image");
 
 app.use(function (req, res, next) {
 
@@ -24,7 +25,7 @@ app.use(function (req, res, next) {
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
 
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,authorization');
 
   res.setHeader('Access-Control-Allow-Credentials', true);
 
@@ -91,6 +92,53 @@ app.get('/monitor/:name', async function (req, res) {
   .find({modelName: modelName}, {})
   .exec();
   res.json(deployed);
+})
+
+app.post('/deploy/saveImage', async function (req, res) {
+  var modelName = req.body;
+  // const deployed = await modelMonitor
+  // .find({modelName: modelName}, {})
+  // .exec();
+  // res.json(deployed);
+})
+
+app.post('/deploy/getSaveImage', async function (req, res) {
+  var data = req.body;
+  // const images = await modelImage
+  // .find({versionList: data.versionList, modelListName: data.modelListName})
+  // .exec();
+  var versions = data.versionList.split(',');
+  var models = data.modelListName.split(',');
+  var length = versions.length;
+  var newData = versions.map((value, index) => {
+    return {versionList: value, modelListName: models[index]}
+  })
+  newData = newData.sort(function(a, b){return a.versionList - b.versionList})
+
+  const images = await modelImage
+  .find({})
+  .exec();
+  var result = [];
+  for(let i = 0; i < images.length; i++){
+    versions = images[i].versionList.split(',');
+    if(length != versions.length){continue;}
+    models = images[i].modelListName.split(',');
+    testData = versions.map((value, index) => {
+      return {versionList: value, modelListName: models[index]}
+    })
+    testData2 = testData.sort(function(a, b){return a.versionList - b.versionList})
+    var equal = true;
+    for(let i = 0; i < length; i++){
+      if(testData2[i].versionList != newData[i].versionList || testData2[i].modelListName != newData[i].modelListName){
+        equal = false;
+      }
+    }
+    if(equal){
+      result.push(images[i]);
+    }
+  }
+
+  res.json(result);
 })
 
 app.listen(4000, function () {
