@@ -18,6 +18,7 @@ var app = express();
 const model = mongoose.model("weight", ProductSchema, "weight");
 const modelMonitor = mongoose.model("monitoring", ProductSchema, "monitoring");
 const modelImage = mongoose.model("image", ProductSchema, "image");
+const jenkinsUser = mongoose.model("jenkinsuser", ProductSchema, "jenkinsuser");
 
 app.use(function (req, res, next) {
 
@@ -138,6 +139,16 @@ app.post('/deploy/getSaveImage', async function (req, res) {
     }
   }
 
+  res.json(result);
+})
+
+app.post('/loginjenkins', async function (req, res) {
+  var data = req.body;
+  // const deployed = await modelMonitor
+  // .find({modelName: modelName}, {})
+  // .exec();
+  // res.json(deployed);
+  const result = await jenkinsUser.findOne({username: data.username, password: data.password}, {}).exec();
   res.json(result);
 })
 
