@@ -19,6 +19,7 @@ const model = mongoose.model("weight", ProductSchema, "weight");
 const modelMonitor = mongoose.model("monitoring", ProductSchema, "monitoring");
 const modelImage = mongoose.model("image", ProductSchema, "image");
 const jenkinsUser = mongoose.model("jenkinsuser", ProductSchema, "jenkinsuser");
+const seqs2 = mongoose.model("seqs2", ProductSchema, "seqs2");
 
 app.use(function (req, res, next) {
 
@@ -150,6 +151,16 @@ app.post('/loginjenkins', async function (req, res) {
   // res.json(deployed);
   const result = await jenkinsUser.findOne({username: data.username, password: data.password}, {}).exec();
   res.json(result);
+})
+
+app.get('/addImageSeq', async function (req, res) {
+  // const deployed = await modelMonitor
+  // .find({modelName: modelName}, {})
+  // .exec();
+  // res.json(deployed);
+  const result = await seqs2.findOne({}, {}).exec();
+  const update = await seqs2.findOneAndUpdate({}, {seq: result.seq + 1}).exec();
+  res.json(result.seq);
 })
 
 app.listen(4000, function () {
