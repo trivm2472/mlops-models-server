@@ -117,7 +117,6 @@ app.get('/jenkinsResult/:status', async function (req, res) {
       await model.updateOne({id: deploy.currentIdList[i]}, {deployed: true}).exec();
     }
     await deploying.updateOne({}, {status: 'idle', currentIdList: [], lastIdList: []}).exec();
-    io.emit('deployResult', 'success');
   } else {
     const deploy = await deploying.findOne({}).exec();
     await model.updateMany({}, {deployed: false}).exec();
@@ -125,7 +124,6 @@ app.get('/jenkinsResult/:status', async function (req, res) {
       await model.updateOne({id: deploy.lastIdList[i]}, {deployed: true}).exec();
     }
     await deploying.updateOne({}, {status: 'idle', currentIdList: [], lastIdList: []}).exec();
-    io.emit('deployResult', 'fail');
   }
   res.json('success');
 })
