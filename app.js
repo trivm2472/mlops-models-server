@@ -2,7 +2,6 @@ var express = require("express");
 const http = require('http');
 const bodyParser = require('body-parser');
 const mongoose = require("mongoose");
-const socketIO = require('socket.io');
 const cors = require('cors');
 
 const Schema = mongoose.Schema;
@@ -18,15 +17,6 @@ db.once("open", function () {
 });
 
 var app = express();
-const server = http.createServer(app);
-const io = socketIO(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-  }
-});
 
 const model = mongoose.model("weight", ProductSchema, "weight");
 const modelMonitor = mongoose.model("monitoring", ProductSchema, "monitoring");
@@ -48,22 +38,6 @@ app.use(function (req, res, next) {
   next();
 });
 
-
-io.on('connection', (socket) => {
-  console.log('A new client has connected.');
-
-  // Event to handle messages from the client
-  socket.on('message', (data) => {
-    console.log('Received message:', data);
-    // Broadcast the message to all connected clients
-    io.emit('message', data);
-  });
-
-  // Event to handle client disconnection
-  socket.on('disconnect', () => {
-    console.log('A client has disconnected.');
-  });
-});
 
 app.use(bodyParser.json());
 
@@ -231,7 +205,7 @@ app.get('/addImageSeq', async function (req, res) {
   res.json(result.seq);
 })
 
-server.listen(4000, function () {
+app.listen(4000, function () {
   console.log("Example app listening on port 4000!");
 });
 
