@@ -1,6 +1,9 @@
 var express = require("express");
+const http = require('http');
 const bodyParser = require('body-parser');
 const mongoose = require("mongoose");
+const socketIO = require('socket.io');
+const cors = require('cors');
 
 const Schema = mongoose.Schema;
 const ProductSchema = new Schema({}, { strict: false });
@@ -15,11 +18,22 @@ db.once("open", function () {
 });
 
 var app = express();
+const server = http.createServer(app);
+const io = socketIO(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  }
+});
+
 const model = mongoose.model("weight", ProductSchema, "weight");
 const modelMonitor = mongoose.model("monitoring", ProductSchema, "monitoring");
 const modelImage = mongoose.model("image", ProductSchema, "image");
 const jenkinsUser = mongoose.model("jenkinsuser", ProductSchema, "jenkinsuser");
 const seqs2 = mongoose.model("seqs2", ProductSchema, "seqs2");
+const deploying = mongoose.model("deploying", ProductSchema, "deploying");
 
 app.use(function (req, res, next) {
 
@@ -32,6 +46,23 @@ app.use(function (req, res, next) {
   res.setHeader('Access-Control-Allow-Credentials', true);
 
   next();
+});
+
+
+io.on('connection', (socket) => {
+  console.log('A new client has connected.');
+
+  // Event to handle messages from the client
+  socket.on('message', (data) => {
+    console.log('Received message:', data);
+    // Broadcast the message to all connected clients
+    io.emit('message', data);
+  });
+
+  // Event to handle client disconnection
+  socket.on('disconnect', () => {
+    console.log('A client has disconnected.');
+  });
 });
 
 app.use(bodyParser.json());
@@ -81,9 +112,46 @@ app.get('/deployed', async function (req, res) {
 
 app.post('/deploy', async function (req, res) {
   const data = req.body;
-  await model.updateMany({}, {deployed: false}).exec();
-  for(let i = 0; i < data.modelIdList.length; i++){
-    await model.updateMany({id: data.modelIdList[i]}, {deployed: true}).exec();
+  var currentDeploy = await model.find({deployed: true}, 'id').exec();
+  var currentIdList = []
+  for(let i = 0; i < currentDeploy.length; i++){
+    currentIdList.push(Object.values(Object.values(currentDeploy[i])[2])[1]);
+  }
+  await deploying.updateOne({}, {lastIdList: currentIdList, currentIdList: data.modelIdList, status: 'deploying'})
+  res.json('success');
+})
+
+app.get('/deployStatus', async function (req, res) {
+  const result = await deploying.findOne({}).exec();
+  res.json(result);
+})
+
+app.post('/getModelList', async function (req, res) {
+  const arrayId = req.body.arrayId;
+  var result = await model.find({}).exec();
+  result = result.filter(obj => arrayId.includes(Object.values(Object.values(obj)[2])[1]))
+  res.json(result);
+})
+
+app.get('/jenkinsResult/:status', async function (req, res) {
+  const temp = await deploying.findOne({}).exec()
+  var status = req.params.status;
+  if (status == "success") {
+    const deploy = await deploying.findOne({}).exec();
+    await model.updateMany({}, {deployed: false}).exec();
+    for(let i = 0; i < deploy.currentIdList.length; i++){
+      await model.updateOne({id: deploy.currentIdList[i]}, {deployed: true}).exec();
+    }
+    await deploying.updateOne({}, {status: 'idle', currentIdList: [], lastIdList: []}).exec();
+    io.emit('deployResult', 'success');
+  } else {
+    const deploy = await deploying.findOne({}).exec();
+    await model.updateMany({}, {deployed: false}).exec();
+    for(let i = 0; i < deploy.lastIdList.length; i++){
+      await model.updateOne({id: deploy.lastIdList[i]}, {deployed: true}).exec();
+    }
+    await deploying.updateOne({}, {status: 'idle', currentIdList: [], lastIdList: []}).exec();
+    io.emit('deployResult', 'fail');
   }
   res.json('success');
 })
@@ -163,7 +231,7 @@ app.get('/addImageSeq', async function (req, res) {
   res.json(result.seq);
 })
 
-app.listen(4000, function () {
+server.listen(4000, function () {
   console.log("Example app listening on port 4000!");
 });
 
