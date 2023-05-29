@@ -108,6 +108,11 @@ app.post('/getModelList', async function (req, res) {
 })
 
 app.get('/jenkinsResult/:status', async function (req, res) {
+  const x = await deploying.findOne({}).exec();
+  if(x.status == 'idle'){
+    res.json('success');
+    return;
+  }
   const temp = await deploying.findOne({}).exec()
   var status = req.params.status;
   if (status == "success") {
