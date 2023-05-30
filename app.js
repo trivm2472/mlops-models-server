@@ -91,7 +91,7 @@ app.post('/deploy', async function (req, res) {
   for(let i = 0; i < currentDeploy.length; i++){
     currentIdList.push(Object.values(Object.values(currentDeploy[i])[2])[1]);
   }
-  await deploying.updateOne({}, {lastIdList: currentIdList, currentIdList: data.modelIdList, status: 'deploying'})
+  await deploying.updateOne({}, {lastIdList: currentIdList, currentIdList: data.modelIdList, status: 'deploying', urlLink: data.urlLink})
   res.json('success');
 })
 
