@@ -24,6 +24,7 @@ const modelImage = mongoose.model("image", ProductSchema, "image");
 const jenkinsUser = mongoose.model("jenkinsuser", ProductSchema, "jenkinsuser");
 const seqs2 = mongoose.model("seqs2", ProductSchema, "seqs2");
 const deploying = mongoose.model("deploying", ProductSchema, "deploying");
+const training = mongoose.model("training", ProductSchema, "training");
 
 app.use(function (req, res, next) {
 
@@ -207,6 +208,20 @@ app.get('/addImageSeq', async function (req, res) {
   const update = await seqs2.findOneAndUpdate({}, {seq: result.seq + 1}).exec();
   res.json(result.seq);
 })
+
+app.get('/train/:modelName', async function (req, res) {
+  name = req.params.modelName
+  const temp = await training.findOne({}).exec();
+  temp.modelNameList.push(name);
+  const update = await training.findOneAndUpdate({}, {modelNameList: temp.modelNameList}).exec();
+  res.json('success');
+})
+
+app.get('/training/', async function (req, res) {
+  const temp = await training.findOne({}).exec();
+  res.json(temp.modelNameList);
+})
+
 
 app.listen(4000, function () {
   console.log("Example app listening on port 4000!");
