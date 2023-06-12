@@ -25,6 +25,7 @@ const jenkinsUser = mongoose.model("jenkinsuser", ProductSchema, "jenkinsuser");
 const seqs2 = mongoose.model("seqs2", ProductSchema, "seqs2");
 const deploying = mongoose.model("deploying", ProductSchema, "deploying");
 const training = mongoose.model("training", ProductSchema, "training");
+const lastTrainStatus = mongoose.model("lasttrainstatus", ProductSchema, "lasttrainstatus");
 
 app.use(function (req, res, next) {
 
@@ -222,6 +223,16 @@ app.get('/training/', async function (req, res) {
   res.json(temp.modelNameList);
 })
 
+app.get('/lastTrainStatus', async function (req, res) {
+  const temp = await lastTrainStatus.find({}).exec();
+  res.json(temp);
+})
+
+app.get('/lastTrainStatus/:name', async function (req, res) {
+  name = req.params.name
+  const temp = await lastTrainStatus.find({modelName: name}).exec();
+  res.json(temp);
+})
 
 app.listen(4000, function () {
   console.log("Example app listening on port 4000!");
